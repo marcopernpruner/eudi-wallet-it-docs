@@ -245,10 +245,9 @@ access token, which means that the access token binds to the device using crypto
 
 The second surface for the attack is related to key management. In the case of using software-based keys, it is possible to clone the keys and move them to a device under 
 attacker control, and in the case of stealing the Credentials as well, the attacker can easily create proof of possession of the keys. IT Wallet is less vulnerable to these attacks as it supports local 
-internal WSCD that uses hardware-based keys. However, the security of local internal WSCD solutions, such as TEE, is known to be vulnerable to attacks like buffer overflow attack and trustzone privilege escalation 
-(for more details see https://www.sciencedirect.com/science/article/pii/S0167404823000901). This, together with the lack of a 
+internal WSCD that uses hardware-based keys. However, the lack of a 
 certification profile that certifies the local internal WSCD against highly capable attackers (the certification for current TEE solutions on the market reaches AVA_VAN.3 at most 
-as shown for example in https://www.tuv-nederland.nl/assets/files/cerfiticaten/2021/08/nscib-cc-0244671-cr-1.0.pdf or https://globalplatform.org/specs-library/tee-protection-profile-v1-3/), makes the requirement only partially satisfied.
+as shown for example in https://www.tuv-nederland.nl/assets/files/cerfiticaten/2021/08/nscib-cc-0244671-cr-1.0.pdf or https://globalplatform.org/specs-library/tee-protection-profile-v1-3/) makes the requirement only partially satisfied.
 
 .. note::
    In the EUDI Wallet context, the local internal WSCD and other WSCD deployments are still under certification 
