@@ -73,8 +73,7 @@ SR-CF-21
 
 Both SD-JWT and mDOC-CBOR support cryptographic Holder binding by defining how a Holder can present a Credential to a Verifier, providing cryptographic proof of legitimate possession of the Credential.
 
-Currently, for the remote flow the IT Wallet specification supports only SD-JWT presentations. In this case, the KB-JWT (Key-Bound JWT) parameter is used to 
-prove that the Holder possesses the private key bound to the Credential. The Holder signs the KB-JWT using a **nonce** and a Verifier identifier (**aud** claim) as a challenge.
+Currently, for the remote flow, IT-Wallet supports only SD-JWT presentations. In this scenario, the KB-JWT (Key-Bound JWT) parameter is utilized to demonstrate that the Holder possesses the private key associated with the Credential. The Holder signs the KB-JWT using a **nonce** and a Verifier identifier, using the **aud** parameter, as a challenge.
 
 SR-E-20
 ~~~~~~~
@@ -177,7 +176,7 @@ SR-P-20
    * - |check-icon|
      - The protocol must ensure that no third party can interfere with the issuance process such that the Issuer issues Credentials for the third party to the User.
 
-This requirement is addressed by secure identification of the Issuer. The "iss" parameter in the authorization response assures the Wallet that the response is coming from the expected Issuer, plus the use of PKCE avoids injection of the code from another session to the User session. 
+This requirement is addressed by secure identification of the Issuer. The "iss" parameter in the authorization response assures the Wallet that the response is coming from the expected Issuer and the cryptographic verification of the received tokens ensures that they were issued by the legitimate Issuer. In addition, the use of PKCE avoids injection of the code from another session to the User session.
 
 SR-P-30
 ~~~~~~~
@@ -199,7 +198,7 @@ SR-P-40
 
 In the case of the same device flow, this can be prevented by using and properly checking the **nonce** value, which is created and sent by the Verifier in the authorization request. 
 The Verifier should maintain a mapping between User sessions and the **nonce** that is expected in the flow. The Verifier should only accept a presentation if the **nonce** in the presentation 
-matches the **nonce** that is expected for the User session. With this countermeasure, the Verifier can detect if a presentation is sent that was not bound to the User's session or if no 
+matches the **nonce** that is expected for the User session. With this countermeasure, the Verifier must detect if a presentation is sent that was not bound to the User's session or if no 
 User session exists at all, preventing the attack.
 
 For cross-device flow the requirement is partially satisfied as the flow is vulnerable to Cross-Device Consent Phishing attacks (an attacker could initiate the presentation flow, 
@@ -212,7 +211,7 @@ thus reducing the opportunity for a successful attack.
   Other security measures are currently under evaluation in issue number [117](https://github.com/italia/eudi-wallet-it-docs/issues/117), 
   where a list of mitigations from [`OAuthCrossDeviceSec`_] are discussed. Two examples are:
   
-  - Short Lived/Timebound QR Codes: Reducing the lifetime of the QR code (e.g., 2-3 mins) is fundamental to restrict the time window available for the attacks. 
+  - Short Lived/Timebound QR Codes: Reducing the lifetime of the QR code (e.g., 2-3 mins) is necessary to restrict the time window available for the attacks. 
   - One-Time QR Codes: One-Time QR codes restrict the possibility of attacks when the same QR code is sent to multiple victims. 
 
 SR-P-41
@@ -245,11 +244,10 @@ The second surface for the attack is related to key management. In the case of u
 attacker control, and in the case of stealing the Credentials as well, the attacker can easily create proof of possession of the keys. IT-Wallet is less vulnerable to these attacks as it supports local 
 internal WSCD that uses hardware-based keys. However, the lack of a 
 certification profile that certifies the local internal WSCD against highly capable attackers (the certification for current TEE solutions on the market reaches AVA_VAN.3 at most 
-as shown for example in https://www.tuv-nederland.nl/assets/files/cerfiticaten/2021/08/nscib-cc-0244671-cr-1.0.pdf or https://globalplatform.org/specs-library/tee-protection-profile-v1-3/) makes the requirement only partially satisfied.
+as shown for example in this `Certification Report <https://www.tuv-nederland.nl/assets/files/cerfiticaten/2021/08/nscib-cc-0244671-cr-1.0.pdf>`_ or `Global Platform site <https://globalplatform.org/specs-library/tee-protection-profile-v1-3/>`_ makes the requirement only partially satisfied.
 
 .. note::
-   In the EUDI Wallet context, the local internal WSCD and other WSCD deployments are still under certification 
-   (see https://docbox.etsi.org/ESI/Open/workshops/202409_CEN_ETSI_Workshop/DAY3-8%20Certification%20for%20EU%20Digital%20Identity%20Wallets/DAY3-8-26%20ETSI_CEN_WS_WSCA%20Jan%20Kjaersgaard.pdf).
+   In the EUDI Wallet context, the local internal WSCD and other WSCD deployments are still under certification according to `CEN_ETSI_Workshop <https://docbox.etsi.org/ESI/Open/workshops/202409_CEN_ETSI_Workshop/DAY3-8%20Certification%20for%20EU%20Digital%20Identity%20Wallets/DAY3-8-26%20ETSI_CEN_WS_WSCA%20Jan%20Kjaersgaard.pdf>`_.
 
 SR-V-10
 ~~~~~~~
@@ -259,7 +257,7 @@ SR-V-10
    * - |partially-check-icon|
      - (conditional w.r.t  I-50+V-20) The Verifier must ensure that the Credential is stored in a secure Wallet.
 
-Verifier checks the Wallet Attestation during exchanges (sent with the authorization response), ensuring that it meets the security criteria required by the Verifier and that it is issued by a trusted Wallet Provider.  
+Verifier checks the Wallet Attestation during exchanges (sent with the authorization response), ensuring that it meets the security criteria required by the Verifier and is under the sole responsability of its issuer, the trusted Wallet Provider.  
 
 .. note::
  Currently, no explicit security and privacy measures related to this requirement are specified in [`OpenID4VC-SecTrust`_] and it is not clearly defined what "stored in a secure Wallet" means. Without this detail, this requirement is considered only partially satisfied. Indeed, the Wallet Attestation guarantees 
@@ -325,7 +323,7 @@ PR-CF-40
    * - |partially-check-icon|
      - The Credential Format must support correlation protection.
 
-While selective disclosure is a strong tool for preventing correlation, full unlinkability is not guaranteed in all cases. Issues like Verifier collusion or Issuer tracking can arise, especially if sensitive identifiers (e.g., taxpayer ID) are disclosed. 
+While selective disclosure is a strong tool for preventing correlation, full unlinkability is not guaranteed in all cases. Issues like Verifier collusion or Issuer tracking can arise. 
 
 .. tip::
   Batch issuance, using different key binding keys and salts for each Credential, can mitigate Verifier/Verifier and presentation unlinkability risks. 
@@ -350,13 +348,13 @@ PR-E-70
    * - |partially-check-icon|
      - The Trust Framework must support correlation protection.
 
-In the case of IT-Wallet, as the Trust Framework uses OpenID Federation [`OID-FED`_], the following mechanisms in place reduce the correlation:
+The following mechanisms may be implemented to reduce the correlation:
 
-- *Verifier-Verifier*: OpenID Federation employs evaluation mechanisms to ensure that a Verifier requests only the information it is authorized to obtain from the Wallet. This approach minimizes data exchange and helps prevent User profiling through potential collusion between Verifiers.
+- *Verifier-Verifier*: evaluation mechanisms to ensure that a Verifier requests only the information it is authorized to obtain from the Wallet. This approach minimizes data exchange and helps prevent User profiling through potential collusion between Verifiers.
 - *Issuer-Verifier*: The Issuer does not require the authentication of the Verifier during the trust evaluation. In principle, the Issuer does not know which Verifiers the User is accessing and will avoid User activity profiling based on the Verifier's access.
 
-.. note::
- Even if metadata policies and Trust Marks are features offered by OpenID Federation, the current version of the IT Wallet specification makes them optional and does not provide details on their use.
+.. tip::
+ OpenID Federation Trust Marks allow the definition of custom policies suitable to the satisfaction of this requirement.
 
 PR-W-40
 ~~~~~~~
@@ -441,7 +439,8 @@ further securing the transmission.
 
 Another endpoint to be validated is the **redirect_uri**, which is used to redirect the User back to the Verifier after the Credential presentation is complete. 
 In the IT-Wallet specification, the **redirect_uri** is registered and validated beforehand during the Verifier onboarding using OpenID Federation. During the presentation 
-phase, the Wallet is able to validate this value by verifying the OpenID Federation Trust Chain related to the Verifier. 
+phase, the Wallet must validate this value by verifying the trust with the Verifier according to the Section `Trust Evaluation Mechanism <trust.html#trust-evaluation-mechanism>`_
+
 
 In order to be sure that the **redirect_uri** is received from a legit Wallet and not from the attacker, the Verifier response endpoint upon the recipient of a valid 
 authorization response creates a fresh cryptographic value that is linked to the authorization response and attaches it to the **redirect_uri** that is sent to the Wallet. 
