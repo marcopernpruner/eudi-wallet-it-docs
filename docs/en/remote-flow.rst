@@ -275,7 +275,7 @@ The JWS header parameters are described below:
   * - **alg**
     - Algorithm used to sign the JWT, according to [:rfc:`7516#section-4.1.1`]. It MUST be one of the supported algorithms in Section *Cryptographic Algorithms* and MUST NOT be set to ``none`` or to a symmetric algorithm (MAC) identifier.
   * - **typ**
-    - Media Type of the JWT, as defined in [:rfc:`7519`] and [:rfc:`9101`]. It MUST be set to the value ``oauth-authz-req+jwt``.
+    - Media Type of the JWT, as defined in [:rfc:`7519`] and [:rfc:`9101`]. It SHOULD be set to the value ``oauth-authz-req+jwt``.
   * - **kid**
     - Key ID of the public key needed to verify the JWS signature, as defined in [:rfc:`7517`]. REQUIRED when ``trust_chain`` is used.
   * - **trust_chain**
