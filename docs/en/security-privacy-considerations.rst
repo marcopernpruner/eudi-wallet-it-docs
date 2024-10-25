@@ -5,15 +5,15 @@
 Security and Privacy Considerations
 +++++++++++++++++++++++++++++++++++
 
-This section provides an informal security analysis of the IT Wallet specification by analyzing the compliance with the security and privacy requirements identified in [`OpenID4VC-SecTrust`_]. 
+This section provides an informal security analysis of the IT-Wallet specification by analyzing the compliance with the security and privacy requirements identified in [`OpenID4VC-SecTrust`_]. 
 
 .. note::
 
-  As [`OpenID4VC-SecTrust`_] is still a work in progress, the security and privacy considerations described here are not yet complete and may change in the future. 
+  As [`OpenID4VC-SecTrust`_] is still a work in progress, the security and privacy considerations described may change in the future. 
 
 .. note::
 
-    The focus of the analysis is the compliance of the design choices in the IT Wallet specification with respect to the OpenID4VC protocols. 
+    The focus of the analysis is the compliance of the design choices in the IT-Wallet specification with respect to the OpenID4VC protocols. 
     It is currently out-of-scope *(i)* the analysis of the design of the proximity flow based on ISO 18013-5, and *(ii)* the analysis of the implementation; 
     as a consequence 7 requirements specifically related to the implementation are not considered (e.g., SV-00: The Verifier must implement the protocol securely and correctly).
 
@@ -48,10 +48,10 @@ SR-CF-10 and SR-E-10
    * - |check-icon|
      - For any presentation, the Credential format and Trust Framework must be designed in a secure way to determine the Issuer and to check that the original Credential was issued by this Issuer (e.g., by using a cryptographic signature).
 
-The IT Wallet specification supports both SD-JWT-VC and  mDOC-CBOR Credential formats. The authenticity and integrity of a Credential is checked by verifying the Issuer's signature. 
+The IT-Wallet specification supports both SD-JWT-VC and mDOC-CBOR Credential formats. The authenticity and integrity of a Credential is checked by verifying the Issuer's signature. 
 
-- For SD-JWT, the verification is performed using the algorithm specified in the **alg** header parameter of SD-JWT and the public key that is identified using the **kid** header of the SD-JWT, and extracted from the Trust Chain for the relevant Issuer specified in **iss** claim.  
-- For mDOC, the Issuer's signature is contained in the *Mobile Security Object* (MSO) and can be validated using the Issuer's public key through a trusted certificate chain contained in the **x5chain** header parameter.
+- For SD-JWT, the verification is performed using the algorithm specified in the **alg** header parameter of SD-JWT and a verifiable reference to the public key that must be used for the signature verification. Using OpenID Federation, the verifiable reference to the public cryptographic material is the **kid** header of the SD-JWT, where the cryptographic material is obtained from the Trust Chain about the Credential Issuer, specified in **iss** claim.  
+- For mDOC, the Issuer's signature is contained in the *Mobile Security Object* (MSO) and must be validated using the Issuer's public key through a trusted certificate chain contained in the **x5chain** header parameter.
 
 SR-CF-20
 ~~~~~~~~
@@ -69,10 +69,9 @@ SR-CF-21
    :widths: 8 92
 
    * - |check-icon|
-     - For cryptographic Holder binding, the presentation format must allow that a Holder must prove possession of the private key that is bound to the Credential, usually by signing over a challenge consisting of a nonce and an identifier for the Verifier.
+     - For cryptographic Holder binding, the presentation format requires the Holder to demonstrate possession of the private key associated with the Credential. This is typically achieved by having the Holder sign a challenge, which consists of a nonce value and the Verifier's unique identifier.
 
-Both SD-JWT and mDOC-CBOR support cryptographic Holder binding defining how a Holder can present a Credential to a Verifier proving with a cryptographic proof
-the legitimate possession of the Credential.
+Both SD-JWT and mDOC-CBOR support cryptographic Holder binding by defining how a Holder can present a Credential to a Verifier, providing cryptographic proof of legitimate possession of the Credential.
 
 Currently, for the remote flow the IT Wallet specification supports only SD-JWT presentations. In this case, the KB-JWT (Key-Bound JWT) parameter is used to 
 prove that the Holder possesses the private key bound to the Credential. The Holder signs the KB-JWT using a **nonce** and a Verifier identifier (**aud** claim) as a challenge.
@@ -85,8 +84,8 @@ SR-E-20
    * - |check-icon|
      - The Trust Framework must ensure that the identification of an Issuer is unique and unambiguous. If there are multiple instances of the same Issuer using the same key material, the Verifier must trust all instances equally.
 
-The IT Wallet Trust Framework, compliant with OpenID Federation 1.0 [`OID-FED`_], ensures that each entity (e.g., an Issuer) is uniquely identified through cryptographic 
-keys and metadata distributed via the Entity Configuration well-known endpoint. 
+The IT Wallet Trust Framework ensures that each entity (e.g., an Issuer) is uniquely identified through cryptographic 
+keys and metadata, as distributed via a verifiable attestation, such as the OpenID Federation Entity Configuration verified within a Trust Chain. 
 
 SR-E-30
 ~~~~~~~
@@ -96,7 +95,7 @@ SR-E-30
    * - |check-icon|
      - The way in which the Verifier determines the trustworthiness of the Issuer defined in the Trust Framework must be secured from influence by a malicious party that can, for example, introduce untrustworthy entities into a directory.
 
-Issuers are registered by a Trust Anchor or its Intermediate. To verify the trust of an Issuer, a Verifier must verify that the Trust Chain (i.e. a concatenation of statements) related to the Issuer is valid and still active. This validation process ensures that only trusted entities are permitted to participate in the system, preventing the introduction of untrustworthy actors.
+Issuers are registered by a Trust Anchor or its Intermediate. To verify the trust of an Issuer, a Verifier must verify that the Trust Chain related to the Issuer is valid and still active. This validation process ensures that only trusted entities are permitted to participate in the system, preventing the introduction of untrustworthy actors.
 
 SR-E-40
 ~~~~~~~
@@ -106,7 +105,7 @@ SR-E-40
    * - |check-icon|
      - The Trust Framework must ensure that there is a way for Verifiers to keep their information on trusted Issuers up to date and that there is a way to revoke trust in an Issuer.
 
-If an Issuer's Entity Statement is revoked or unavailable, means that Issuer is no longer considered valid within the federation. This ensures that Verifiers have real-time access to the status of trusted entities and can revoke trust if necessary. However, Verifiers must actively check the Issuer's status by querying federation endpoints (i.e., the fetch endpoint for obtaining the Entity Statement). 
+If an Issuer's Entity Statement is revoked or unavailable, means that Issuer is no longer considered valid within the federation. This ensures that Verifiers have real-time access to the status of trusted entities and can revoke trust if necessary. However, Verifiers must actively check the Issuer's status by querying federation endpoints (i.e., the fetch endpoint for obtaining the Subordinate Statement). 
 
 SR-I-10
 ~~~~~~~
@@ -114,7 +113,7 @@ SR-I-10
    :widths: 8 92
 
    * - |check-icon|
-     - The Issuer must authenticate/identify the User properly according to the expectations of the Verifier (which may be defined in a specification, Trust Framework, or by convention).
+     - The Issuer must authenticate and identify the User properly according to the expectations of the Verifier (which may be defined in a specification, Trust Framework, or by convention).
 
 The issuance process utilizes OAuth 2.0-based flows, specifically the Authorization Code Flow, to securely authenticate the User. Moreover, the User authentication is performed using eIDAS-notified schemes or the PID, ensuring a high LoA. 
 
@@ -124,7 +123,7 @@ SR-I-20
    :widths: 8 92
 
    * - |check-icon|
-     - The Issuer must only put correct and up-to-date claims about the User into the Credential where verified data is expected.
+     - The Issuer must only use correct and up-to-date claims about the User into the Credential where verified data is expected.
 
 When verified data is expected, the Issuer obtains the correct and up-to-date claims from the relevant Authentic Sources, ensuring their accuracy at the time of issuance. 
 
@@ -165,8 +164,7 @@ In Steps 5-6 of :numref:`fig_Low-Level-Flow-ITWallet-PID-QEAA-Issuance`, the Wal
 signed with the Wallet's private key. This attestation confirms that the Wallet Instance is genuine and has been verified by the Wallet Provider.
 
 The Issuer verifies this attestation before allowing the Wallet to participate in the issuance process, ensuring that the Wallet adheres to specific security standards. 
-Afterward, all cryptographic keys generated and used in the process come from this attested Wallet Instance, and the Wallet's identity (client ID) is included in the 
-relevant tokens, ensuring continuity and trust in the Credential storage process. 
+Afterward, all cryptographic keys generated and used in the process come from this attested Wallet Instance. 
 
 .. note:: 
   There is currently an open issue on this aspect (https://github.com/openid/OpenID4VCI/issues/355) in the OpenID4VCI spec.
@@ -211,7 +209,7 @@ Some security measures are already in place, such as the use of **nonce** and st
 thus reducing the opportunity for a successful attack. 
 
 .. note::
-  Other security measures are currently under evaluation in issue #117 (https://github.com/italia/eudi-wallet-it-docs/issues/117), 
+  Other security measures are currently under evaluation in issue number [117](https://github.com/italia/eudi-wallet-it-docs/issues/117), 
   where a list of mitigations from [`OAuthCrossDeviceSec`_] are discussed. Two examples are:
   
   - Short Lived/Timebound QR Codes: Reducing the lifetime of the QR code (e.g., 2-3 mins) is fundamental to restrict the time window available for the attacks. 
@@ -240,11 +238,11 @@ SR-P-50
      - The protocol must ensure that third parties cannot interfere with the binding process.
 
 In the issuance phase, the Holder binding happens at the Credential request to the protected Credential endpoint. This means that the attacker needs to obtain the access token 
-first and therefore send the request to the Credential endpoint and bind the Credentials to the keys under his control. The IT Wallet specification requires the use of a sender-constrained 
+first and therefore send the request to the Credential endpoint and bind the Credentials to the keys under his control. The IT-Wallet specification requires the use of a sender-constrained 
 access token, which means that the access token binds to the device using cryptographic materials. 
 
 The second surface for the attack is related to key management. In the case of using software-based keys, it is possible to clone the keys and move them to a device under 
-attacker control, and in the case of stealing the Credentials as well, the attacker can easily create proof of possession of the keys. IT Wallet is less vulnerable to these attacks as it supports local 
+attacker control, and in the case of stealing the Credentials as well, the attacker can easily create proof of possession of the keys. IT-Wallet is less vulnerable to these attacks as it supports local 
 internal WSCD that uses hardware-based keys. However, the lack of a 
 certification profile that certifies the local internal WSCD against highly capable attackers (the certification for current TEE solutions on the market reaches AVA_VAN.3 at most 
 as shown for example in https://www.tuv-nederland.nl/assets/files/cerfiticaten/2021/08/nscib-cc-0244671-cr-1.0.pdf or https://globalplatform.org/specs-library/tee-protection-profile-v1-3/) makes the requirement only partially satisfied.
@@ -259,7 +257,7 @@ SR-V-10
    :widths: 8 92
 
    * - |partially-check-icon|
-     - (conditional w.r.t  I-50+V-20) The Verifier must ensure that the Credential was stored in a secure Wallet.
+     - (conditional w.r.t  I-50+V-20) The Verifier must ensure that the Credential is stored in a secure Wallet.
 
 Verifier checks the Wallet Attestation during exchanges (sent with the authorization response), ensuring that it meets the security criteria required by the Verifier and that it is issued by a trusted Wallet Provider.  
 
@@ -280,7 +278,7 @@ SR-V-20
 By checking the trust of the Issuer, the Verifier ensures that the Credential was issued by a trusted Issuer committed to issuing Credentials only to secure Wallets (as for SR-I-50).
 
 .. note::
-  Currently, no explicit security and privacy measures related to this requirement are specified in [`OpenID4VC-SecTrust`_], it remains a TODO. 
+  Currently, no explicit security and privacy measures related to this requirement are specified in [`OpenID4VC-SecTrust`_], configuring this item as something that requires further developments and clarifications. 
 
 SR-W-20
 ~~~~~~~
@@ -340,8 +338,8 @@ PR-E-60
    * - |check-icon| 
      - The Trust Framework must ensure that the Issuer cannot learn where the User uses the Credential.
 
-When a Verifier performs the Trust Evaluation of the Issuer of a Credential following [`OID-FED`_], the Issuer cannot know who is the User presenting the Credential.
-In addition, privacy is protected also during the check of the Credential's status. By using Status Assertion [`OAUTH-STATUS-ASSERTION`_], the IT Wallet specification ensures 
+The Verifier performing the Trust Evaluation about the Issuer of a Credential must not release any information to the Credential Issuer about the Wallet Instance it is interacting with. Using [`OID-FED`_] the Issuer doesn't know who is the User presenting the Credential.
+In addition, privacy is protected also during the check of the Credential's status. By using Status Assertion [`OAUTH-STATUS-ASSERTION`_], the IT-Wallet specification ensures 
 that while the Verifier checks the Credential's validity, the Issuer does not learn where or when the Credential is being used.
 
 PR-E-70
@@ -352,9 +350,9 @@ PR-E-70
    * - |partially-check-icon|
      - The Trust Framework must support correlation protection.
 
-In the case of IT Wallet, as the Trust Framework uses OpenID Federation [`OID-FED`_], the IT Wallet specification has the following mechanisms in place that could help to reduce the correlation:
+In the case of IT-Wallet, as the Trust Framework uses OpenID Federation [`OID-FED`_], the following mechanisms in place reduce the correlation:
 
-- *Verifier-Verifier*: OpenID Federation provides the evaluation mechanisms to verify whether the Verifier is asking from the Wallet the information that is authorized to ask or not.  Thus, it will minimize the data exchange and consequently avoid User profiling by colluding between two Verifiers;
+- *Verifier-Verifier*: OpenID Federation employs evaluation mechanisms to ensure that a Verifier requests only the information it is authorized to obtain from the Wallet. This approach minimizes data exchange and helps prevent User profiling through potential collusion between Verifiers.
 - *Issuer-Verifier*: The Issuer does not require the authentication of the Verifier during the trust evaluation. In principle, the Issuer does not know which Verifiers the User is accessing and will avoid User activity profiling based on the Verifier's access.
 
 .. note::
@@ -388,7 +386,7 @@ PR-W-70
    * - |uncheck-icon| 
      - The Wallet must ensure that the Verifier cannot learn that the same User is using other Verifiers.
 
-To mitigate Verifier/Verifier linkability for SD-JWT Credentials, one proposed solution is batch issuance, which involves using different key binding keys and salts for each Credential. However, the effectiveness of these methods has not yet been thoroughly evaluated, and is not available for IT Wallet yet.  
+To mitigate Verifier/Verifier linkability for SD-JWT Credentials, one proposed solution is batch issuance, which involves using different cryptographic keys used in the key binding and salts for each issued Credential. However, the effectiveness of these methods has not yet been thoroughly evaluated, even in consideration of the impacts that these might result with the user experience, and is not available for IT-Wallet yet.  
 
 Security and Privacy Requirements
 ---------------------------------
@@ -403,7 +401,7 @@ SPR-E-50
 
 The Credential lifecycle includes a Credential revocation mechanism based on Status Assertion [`OAUTH-STATUS-ASSERTION`_] that ensures that Credentials are properly revoked when compromised or outdated. 
 
-The revocation of a Federation Entity (i.e., Issuer, Verifier, Wallet Provider) is instead possible by removing the corresponding Entity Statement, thus preventing misuse during compromise. 
+The revocation of a Federation Entity (i.e., Issuer, Verifier, Wallet Provider) is instead possible by not issuing the corresponding Subordinate Statement about that Entity and set a short expiration of the Trust Chain, thus preventing misuse during compromise. 
 
 .. tip::
   In addition, [`OID-FED`_] supports a historical key endpoint to retrieve the list of expired and revoked keys, with the motivation of the revocation. 
@@ -416,7 +414,7 @@ SPR-P-10
    * - |check-icon| 
      - The protocol must ensure that no third party can read the Credential issued by the Issuer.
 
-To mitigate this threat, the IT Wallet specification requires the following security mechanisms in the issuance process:
+To mitigate this threat, the IT-Wallet specification requires the following security mechanisms in the issuance process:
 
 - *TLS*: Used in all communication between the Wallet and the Issuer, ensuring that data in transit is encrypted and protected from interception by attackers.
 - *Wallet Attestation*: Ensures that the Wallet operates on a secure, trusted device and complies with the security standards required by the Issuer, providing additional assurance that the Issuer is interacting with a legitimate Wallet Instance.
@@ -442,7 +440,7 @@ Additionally, the Authorization Response is encrypted with the Verifier's public
 further securing the transmission.
 
 Another endpoint to be validated is the **redirect_uri**, which is used to redirect the User back to the Verifier after the Credential presentation is complete. 
-In the IT Wallet specification, the **redirect_uri** is registered and validated beforehand during the Verifier onboarding using OpenID Federation. During the presentation 
+In the IT-Wallet specification, the **redirect_uri** is registered and validated beforehand during the Verifier onboarding using OpenID Federation. During the presentation 
 phase, the Wallet is able to validate this value by verifying the OpenID Federation Trust Chain related to the Verifier. 
 
 In order to be sure that the **redirect_uri** is received from a legit Wallet and not from the attacker, the Verifier response endpoint upon the recipient of a valid 
@@ -459,7 +457,7 @@ SPR-P-70
      - The protocol must ensure that during an interaction with an Issuer, an attacker cannot read PII.
 
 In the issuance process, as the Credential inside a Credential Response contains PII, it is required that the Credential is not sent to or intercepted by an attacker. 
-To mitigate these threats, the IT Wallet specification requires the following security mechanisms:
+To mitigate these threats, the IT-Wallet specification requires the following security mechanisms:
 
 - *TLS*: Used in all communication between the Wallet and the Issuer, ensuring that data in transit is encrypted and protected from interception by attackers.
 - *Wallet Instance Attestation*: Ensures that the Wallet operates on a secure, trusted device and complies with the security standards required by the Issuer, providing additional assurance that the Issuer is interacting with a legitimate Wallet Instance.
@@ -473,7 +471,7 @@ To mitigate these threats, the IT Wallet specification requires the following se
   OpenID4VCI standard provides the option for the Wallet to request encrypted Credentials containing PII by including a **credential_response_encryption** object in its request. 
 
 .. note::
-  Currently, no explicit security and privacy measures related to this requirement are specified in [`OpenID4VC-SecTrust`_], it remains a TODO. 
+  Currently, no explicit security and privacy measures related to this requirement are specified in [`OpenID4VC-SecTrust`_], it remains a work in progress. 
 
 SPR-P-80
 ~~~~~~~~
