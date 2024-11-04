@@ -65,7 +65,7 @@ Below are the description of acronyms and definitions which are useful for furth
        |
        | *Alternative terms:* EUDI Wallet Provider.
    * - Wallet Instance
-     - It is an application  installed and configured on a User's device belonging to and which is controlled by a User, as part of the Wallet Unit. The Wallet Instance provides graphical interfaces for User interaction with the Wallet Unit.
+     - It is an application installed and configured on a User's device belonging to and which is controlled by a User, as part of the Wallet Unit. The Wallet Instance provides graphical interfaces for User interaction with the Wallet Unit.
      - | Revised from Implementing Act.
        | *Differences:* editorial. 
        | 
