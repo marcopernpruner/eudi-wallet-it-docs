@@ -252,4 +252,3 @@ Acronyms
   * - **WSCA**
     - Wallet Secure Cryptographic Application
 
-    
