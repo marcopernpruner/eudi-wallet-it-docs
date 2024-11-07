@@ -196,21 +196,26 @@ Below is represented a non-normative example of the QR Code raw payload:
     The *error correction level* chosen for the QR Code MUST be Q (Quartily - up to 25%), since it offers a good balance between error correction capability and data density/space. This level of quality and error correction allows the QR Code to remain readable even if it is damaged or partially obscured.
 
 
-Cross Device Flow Status Checks and Security
---------------------------------------------
+Device Flow Status Checks and Security
+--------------------------------------
 
-When the flow is Cross Device, the user-agent needs to check the session status to the endpoint made available by Relying Party (status endpoint). This check MAY be implemented in the form of JavaScript code, within the page that shows the QRCode, then the user-agent checks the status with a polling strategy in seconds or a push strategy (eg: web socket).
+Be the flow Same Device or Cross Device, the user-agent needs to check the session status to the endpoint made available by Relying Party (status endpoint).
+This check MAY be implemented in the form of JavaScript code, within the page that shows the QRCode,
+then the user-agent checks the status with a polling strategy in seconds or a push strategy (eg: web socket).
 
-Since the QRcode page and the status endpoint are implemented by the Relying Party, it is under the Relying Party responsability the implementation details of this solution, since it is related to the Relying Party's internal API. However, the text below describes an implementation example.
+Since the QRcode page and the status endpoint are implemented by the Relying Party,
+it is under the Relying Party responsability the implementation details of this solution,
+because this is related to the Relying Party's internal API. However, the text below describes an implementation example.
 
-The Relying Party binds the request of the user-agent, with a session cookie marked as ``Secure`` and ``HttpOnly``, with the issued request. The request url SHOULD include a parameter with a random value. The HTTP response returned by this specialized endpoint MAY contain the HTTP status codes listed below:
+The Relying Party binds the request of the user-agent, with a session cookie marked as ``Secure`` and ``HttpOnly``, with the issued request.
+The request url SHOULD include a parameter with a random value. The HTTP response returned by this status endpoint MAY contain the HTTP status codes listed below:
 
 * **201 Created**. The signed Request Object was issued by the Relying Party that waits to be downloaded by the Wallet Instance at the **request_uri** endpoint.
 * **202 Accepted**. This response is given when the signed Request Object was obtained by the Wallet Instance.
 * **200 OK**. The Wallet Instance has provided the presentation to the Relying Party's  **response_uri** endpoint and the User authentication is successful. The Relying Party updates the session cookie allowing the user-agent to access to the protected resource. An URL is provided carrying the location where the user-agent is intended to navigate.
 * **401 Unauthorized**. The Wallet Instance or its User have rejected the request, or the request is expired. The QRCode page SHOULD be updated with an error message.
 
-Below a non-normative example of the HTTP Request to this specialized endpoint, where the parameter ``id`` contains an opaque and random value:
+Below a non-normative example of the HTTP Request to the status endpoint, where the parameter ``id`` contains an opaque and random value:
 
 .. code::
 
