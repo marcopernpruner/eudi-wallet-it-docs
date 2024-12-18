@@ -13,7 +13,7 @@ To leverage the PDND, entities must formally subscribe, becoming **Participants*
     - **Providers** (*Erogatori*): expose e-Services to other Participants.
     - **Consumers** (*Fruitori*): utilize e-Services offered by Providers within the PDND infrastructure.
 
-Access to an e-Service requires Consumers to obtain a specific access token, known within the PDND infrastructure as a Voucher.
+Access to an e-Service requires Consumers to obtain a specific Access Token, known within the PDND infrastructure as a Voucher.
 
 
 Requirements and Security Patterns
@@ -88,7 +88,7 @@ The **Consumer** MUST comply with the following prerequisites:
 The **Provider** MUST comply with the following prerequisites:
 
     - Has successfully subscribed to the PDND Infrastructure (as per R1).
-    - Has created a new e-Service and published it within the PDND API Catalogue (as per R2).
+    - Has created a new e-Service and published it within the PDND API Catalogue.
 
 Flow
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -192,9 +192,29 @@ Flow
 
     The ``digest`` claim in the ``client_assertion`` payload is required only when complying with the ``AUDIT_REST_02`` security pattern.
 
-Upon the receipt of the Voucher Request, the PDND Authorization Server performs the following checks:
+Upon the receipt of the Voucher Request, the PDND Authorization Server MUST perform the following steps to validate the ``client_assertion`` signature:
 
-    1. *To be defined*
+    1. Retrieve the public key from the PDND Interoperability API referenced in the ``client_assertion``, using the ``kid`` header parameter.
+    2. Validate the signature of the ``client_assertion`` using the retrieved public key and the algorithm specified by the ``alg`` header parameter.
+
+The Provider MUST perform the following checks on the Voucher Request body parameters:
+
+    - The claim ``client_assertion_type`` is set to ``urn:ietf:params:oauth:client-assertion-type:jwt-bearer``.
+    - The claim ``grant_type`` is set to ``client_credentials``.
+
+
+The Provider MUST ensure that the ``typ`` claim is present in the ``client_assertion`` header and that its value is ``JWT``.
+
+The Provider MUST perform the following checks on the ``client_assertion`` payload:
+
+    - The ``iss`` claim MUST identify a Client registered in the PDND Infrastructure.
+    - The ``aud`` claim MUST represent the PDND Authorization Server.
+    - The ``iat`` claim MUST represent a time instant prior to the current time.
+    - If the ``nbf`` claim is present, it MUST represent a time instant prior to the current time.
+    - The ``exp`` claim MUST represent a time instant after the current time.
+    - The ``jti`` claim MUST NOT have been previously used.
+    - The ``purposeId`` claim MUST identify a purpose registered in the PDND Infrastructure and associated to the Client.
+
 
 **Step 6 (Voucher Issuance)**: In case of successful checks, the PDND Authorization Server issues a Voucher, which is included in the Voucher Response to the Consumer.
 
@@ -228,7 +248,7 @@ Upon the receipt of the Voucher Request, the PDND Authorization Server performs 
 
     {
         "iss": "interop.pagopa.it",
-        "iss": "interop.pagopa.it",
+        "sub": "interop.pagopa.it",
         "aud": "https://erogatore.example/ente-example/v1",
         "exp": 1733041920,
         "nbf": 1733041920,
@@ -308,9 +328,27 @@ Flow
         "jti": "d2c9a7b4-3e81-4d27-b6f7-51a8c9f0a3c6"
     }
 
-Upon the receipt of the Voucher Request, the PDND Authorization Server performs the following checks:
+Upon the receipt of the Voucher Request, the PDND Authorization Server MUST perform the following steps to validate the ``client_assertion`` signature:
 
-    1. *To be defined*
+    1. Retrieve the public key from the PDND Interoperability API referenced in the ``client_assertion``, using the ``kid`` header parameter.
+    2. Validate the signature of the ``client_assertion`` using the retrieved public key and the algorithm specified by the ``alg`` header parameter.
+
+The Provider MUST perform the following checks on the Voucher Request body parameters:
+
+    - The claim ``client_assertion_type`` is set to ``urn:ietf:params:oauth:client-assertion-type:jwt-bearer``.
+    - The claim ``grant_type`` is set to ``client_credentials``.
+
+
+The Provider MUST ensure that the ``typ`` claim is present in the ``client_assertion`` header and that its value is ``JWT``.
+
+The Provider MUST perform the following checks on the ``client_assertion`` payload:
+
+    - The ``iss`` claim MUST identify a Client registered in the PDND Infrastructure.
+    - The ``aud`` claim MUST represent the PDND Authorization Server.
+    - The ``iat`` claim MUST represent a time instant prior to the current time.
+    - If the ``nbf`` claim is present, it MUST represent a time instant prior to the current time.
+    - The ``exp`` claim MUST represent a time instant after the current time.
+    - The ``jti`` claim MUST NOT have been previously used.
 
 **Step 2 (Voucher Issuance)**: In case of successful checks, the PDND Authorization Server issues a Voucher, which is included in the Voucher Response to the Participant.
 
@@ -389,10 +427,10 @@ The Voucher Request MUST include the following body parameters:
       - **Reference**
     * - **client_id**
       - The unique identifier of the Consumer Client, assigned by the PDND.
-      - [:rfc:`6749`], [:rfc:`7521`], [:rfc:`7523`]
+      - [:rfc:`6749`], [:rfc:`7521`], [:rfc:`7523`], [`PDND`_]
     * - **client_assertion**
       - A JWT representing the client assertion.
-      - [:rfc:`7521`], [:rfc:`7523`]
+      - [:rfc:`7521`], [:rfc:`7523`], [`PDND`_]
     * - **client_assertion_type**
       - MUST be set to ``urn:ietf:params:oauth:client-assertion-type:jwt-bearer``.
       - [:rfc:`7521`], [:rfc:`7523`]
@@ -451,7 +489,7 @@ The ``client_assertion`` JWT MUST include the following payload claims (unless o
       - [:rfc:`7523`]
     * - **purposeId**
       - The identifier of the purpose registered in the PDND Platform, associated with the intended e-Service. It is mandatory only if the requested Voucher is for e-Service (i.e., not for Interoperability API).
-      - [`MODI`_]
+      - [`MODI`_], [`PDND`_]
     * - **digest**
       - JSON object containing the digest of the ``TrackingEvidence`` JWT. It is mandatory only when complying with ``AUDIT_REST_02``. If present, it MUST contain the following claims:
 
@@ -473,7 +511,7 @@ The Voucher Response MUST include the following body parameters:
       - **Reference**
     * - **access_token**
       - A JWT representing the access token issued by the PDND Authorization Server Endpoint.
-      - [:rfc:`6749`], [:rfc:`9449`]
+      - [:rfc:`6749`], [:rfc:`9449`], [`PDND`_]
     * - **token_type**
       - It MUST be set to:
       
@@ -535,10 +573,10 @@ The ``access_token`` JWT MUST include the following payload claims (unless other
       - [:rfc:`7519`], [:rfc:`9068`]
     * - **client_id**
       - MUST correspond to the ``client_id`` contained in the Voucher Request.
-      - [:rfc:`7519`], [:rfc:`8963`], [:rfc:`9068`]
+      - [:rfc:`7519`], [:rfc:`8963`], [:rfc:`9068`], [`PDND`_]
     * - **purposeId**
       - MUST correspond to the value of the ``client_id`` claim contained in the Voucher Request. It is mandatory only if the requested Voucher is for e-Service (i.e., not for Interoperability API).
-      - [`MODI`_]
+      - [`MODI`_], [`PDND`_]
     * - **digest**
       - MUST correspond to the value of the ``digest`` object contained in the Voucher Request. It is mandatory only when complying with ``AUDIT_REST_02``.
       - [`MODI`_]
@@ -570,7 +608,7 @@ PDND Keys
 
 **Step 2 (PDND Keys Response)**: The .well-known Endpoint returns the list of keys used by the PDND to sign Vouchers, as a ``JWK Set`` [:rfc:`7517`].
 
-.. code-block::
+.. code-block:: http
     :caption: Non-normative example of the PDND Keys Response
     :name: _code_KeyRetrieval_PDND_Response
 
@@ -741,9 +779,9 @@ Flow
     :name: _code_Usage_Signature_Payload
 
     {
-        "aud": "https://erogatore.example/ente-example/v1",
         "iss": "9a8b7c6d-e5f4-g3h2-i1j0-klmnopqrstuv",
-        "sub": ???,
+        "sub": "9a8b7c6d-e5f4-g3h2-i1j0-klmnopqrstuv",
+        "aud": "https://erogatore.example/ente-example/v1",
         "iat": 1733397840,
         "nbf": 1733397840,
         "exp": 1733401440,
@@ -776,8 +814,8 @@ Flow
     Content-Type: application/json
 
     {
-        "userID": "a8b7c6d5-e4f3-g2h1-i9j0-klmnopqrstuv",
-        "attribute": "home-address"
+        "parameter1": "value1",
+        "parameter2": "value2"
     }
 
 The Provider MUST validate the DPoP proof [:rfc:`9449`].
@@ -817,6 +855,43 @@ The Provider MUST perform the following checks on the ``Signature`` JWT:
 If any of the previous checks fail, the Provider MUST reject the Request.
 
 **Step 4 (e-Service Response):** Upon successful checks, the Provider provides the Consumer with the requested data.
+
+.. code-block:: http
+    :caption: Non-normative example of the e-Service Response
+    :name: _code_Usage_Response
+
+    HTTP/1.1 200 OK
+    Content-Type: application/jwt
+
+    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOi...
+
+    
+.. code-block::
+    :caption: Non-normative example of the e-Service Response JWT header
+    :name: _code_Usage_Response_JWT_Header
+
+    {
+        "alg": "RS256",
+        "kid": "2802a69-1604-4261-9246-21453e20658e",
+        "typ": "JWT"
+    }
+
+.. code-block::
+    :caption: Non-normative example of the e-Service Response JWT payload
+    :name: _code_Usage_Response_JWT_Payload
+
+    {
+        "iss": "https://erogatore.example/ente-example/v1",
+        "aud": "9a8b7c6d-e5f4-g3h2-i1j0-klmnopqrstuv",
+        "iat": 1733401256,
+        "nbf": 1733401256,
+        "exp": 1733401785,
+        "jti": "997532e-871a-4969-9999-123456789abc",
+        "requestedField1": "value1",
+        "requestedField2": "value2",
+        "requestedField3": "value3"
+    }
+
 
 The Provider MUST perform the following steps to validate the e-Service Response JWT:
 
@@ -885,16 +960,16 @@ The ``Signature`` JWT, contained in the ``Agid-JWT-Signature`` HTTP header, MUST
       - **Reference**
     * - **iss**
       - MUST be set to the same value as ``client_id``.
-      - [:rfc:`7523`]
+      - [:rfc:`7519`]
     * - **sub**
       - MUST be set to the same value as ``client_id``.
-      - [:rfc:`7523`]
+      - [:rfc:`7519`]
     * - **aud**
       - The identifier of the Provider.
-      - [:rfc:`7523`]
+      - [:rfc:`7519`]
     * - **exp**
       - UNIX timestamp representing the JWT expiration time.
-      - [:rfc:`7523`]
+      - [:rfc:`7519`]
     * - **nbf**
       - UNIX timestamp representing the JWT first validity time (optional).
       - [:rfc:`7519`]
@@ -903,7 +978,7 @@ The ``Signature`` JWT, contained in the ``Agid-JWT-Signature`` HTTP header, MUST
       - [:rfc:`7519`]
     * - **jti**
       - Unique identifier of the JWT to prevent replay attacks.
-      - [:rfc:`7523`]
+      - [:rfc:`7519`]
     * - **signed_headers**
       - JSON object containing the signed headers whose integrity needs to be protected, to with ``INTEGRITY_REST_02``. It MUST contain the following claims:
 
@@ -941,22 +1016,22 @@ If present, the ``TrackingEvidence`` JWT, contained in the ``Agid-JWT-TrackingEv
       - **Reference**
     * - **iss**
       - MUST be set to the same value as ``client_id``.
-      - [:rfc:`7523`]
+      - [:rfc:`7519`]
     * - **aud**
       - The identifier of the Provider.
-      - [:rfc:`7523`]
+      - [:rfc:`7519`]
     * - **exp**
       - UNIX timestamp representing the JWT expiration time.
-      - [:rfc:`7523`]
+      - [:rfc:`7519`]
     * - **nbf**
       - UNIX timestamp representing the JWT first validity time (optional).
       - [:rfc:`7519`]
     * - **iat**
       - UNIX timestamp representing the JWT issuance time.
-      - [:rfc:`7523`]
+      - [:rfc:`7519`]
     * - **jti**
       - Unique identifier of the JWT to prevent replay attacks.
-      - [:rfc:`7523`]
+      - [:rfc:`7519`]
     * - **purposeId**
       - The identifier of the purpose registered in the PDND Platform, associated with the intended e-Service.
       - [`MODI`_]
@@ -969,6 +1044,29 @@ The ``TrackingEvidence`` payload MUST also contains the tracked data agreed upon
 e-Service Response
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+The e-Service Response is a JWT serialized in ``application/jwt`` format.
+
+The e-Service Response JWT MUST include the following JOSE header parameters:
+
+.. list-table::
+    :widths: 20 60 20
+    :header-rows: 1
+
+    * - **Parameter**
+      - **Description**
+      - **Reference**
+    * - **alg**
+      - A digital signature algorithm identifier.
+      - [:rfc:`7515`]
+    * - **kid**
+      - Unique identifier of the JWK used by the Consumer to sign the JWT.
+      - [:rfc:`7515`]
+    * - **typ**
+      - MUST be set to ``JWT``.
+      - [:rfc:`7515`], [:rfc:`7519`]
+
+The e-Service Response JWT MUST include the following payload claims:
+
 .. list-table::
     :widths: 20 60 20
     :header-rows: 1
@@ -976,11 +1074,23 @@ e-Service Response
     * - **Claim**
       - **Description**
       - **Reference**
-    * - 
-      - 
-      - 
+    * - **iss**
+      - The identifier of the Provider.
+      - [:rfc:`7519`]
+    * - **aud**
+      - The identifier of the Consumer.
+      - [:rfc:`7519`]
+    * - **exp**
+      - UNIX timestamp representing the JWT expiration time.
+      - [:rfc:`7519`]
+    * - **nbf**
+      - UNIX timestamp representing the JWT first validity time (optional).
+      - [:rfc:`7519`]
+    * - **iat**
+      - UNIX timestamp representing the JWT issuance time.
+      - [:rfc:`7519`]
+    * - **jti**
+      - Unique identifier of the JWT to prevent replay attacks.
+      - [:rfc:`7523`]
 
-
-
-Security Considerations
-=============================
+The e-Service Response JWT payload includes specific claims related to the data elements provided to the Consumer.
