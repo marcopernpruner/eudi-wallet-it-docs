@@ -3,10 +3,10 @@
 e-Service PDND
 +++++++++++++++++++
 
-This section outlines how entities interact to achieve interoperability. Two key documents govern these interactions:
+The `EIDAS-ARF`_ framework empowers Member States to establish the interfaces, terms, and conditions governing communication between Credential Issuers and Authentic Sources. In the Italian context, interoperability is established by leveraging the following guidelines:
 
-    - "Linee Guida sull'interoperabilità tecnica delle Pubbliche Amministrazioni" (hereafter referred to as `MODI`_);
-    - "Linee Guida sull'infrastruttura tecnologica della Piattaforma Digitale Nazionale Dati per l'interoperabilità dei sistemi informativi e delle basi di dati" (hereafter referred to as `PDND`_).
+    - "Linee Guida sull'interoperabilità tecnica delle Pubbliche Amministrazioni" (`MODI`_);
+    - "Linee Guida sull'infrastruttura tecnologica della Piattaforma Digitale Nazionale Dati per l'interoperabilità dei sistemi informativi e delle basi di dati" (`PDND`_).
 
 To leverage the PDND, entities must formally subscribe, becoming **Participants** (*Aderenti*). Within the PDND infrastructure, Participants can assume the following roles:
 
@@ -34,13 +34,13 @@ Requirements and Security Patterns
       - The communication between the Consumer and the Provider MUST ensure data integrity, authenticity, non-repudiation and replay protection.
       - Security
     * - R3
-      - The Provider MAY require the Consumer to provide tracked data to complement the request.
+      - The Provider MAY require the Consumer to provide tracked data to complement the request. In that case, there MUST be a correlation between the tracked data and the Voucher.
       - Security
     * - R4
       - The e-Services MUST be implemented in REST, thus SOAP protocol MUST NOT be used.
       - Technical
 
-The following security patterns and profiles are applicable:
+The following security patterns are applicable:
 
 .. list-table::
     :widths: 80 20
@@ -51,13 +51,44 @@ The following security patterns and profiles are applicable:
     * - **[REST_JWS_2021_POP]** JWS POP Voucher Issuing Profile (*Annex 3 - Standards and technical details used for Voucher Authorization* [`PDND`_]): REQUIRED. It adds a proof of possession on the Voucher. The client using the Voucher to access an e-service MUST demonstrate the proof of possession of the private key whose public is attested on the Voucher.
       - R2, R4
     * - **[ID_AUTH_CHANNEL_01]** Direct Trust Transport-Level Security (*Annex 2 - Security Patterns* [`MODI`_]): REQUIRED. It protects the communication between the Consumer and the Provider by ensuring confidentiality, integrity, identification of the Provider, and mitigation against replay attack and spoofing.
-      - R1
-    * - **[ID_AUTH_REST_02]** Client Authentication based on X.509 certificate with uniqueness of the token/message (*Annex 2 - Security Patterns* [`MODI`_]): REQUIRED. It provides authentication of the Consumer to the Provider, as well as mitigation against replay attacks.
+      - R1, R2
+    * - **[INTEGRITY_REST_02]** REST Payload Integrity in PDND (*Annex 2 - Security Patterns* [`MODI`_]): REQUIRED. It ensures the integrity of the payload of the REST Consumer request, within the PDND Infrastructure.
       - R2, R4
-    * - **[INTEGRITY_REST_02]** REST Payload Integrity in PDND (*Annex 2 - Security Patterns* [`MODI`_]): REQUIRED. It ensures the integrity of the payload of the Consumer request.
-      - R2, R4
-    * - **[AUDIT_REST_02]** Submission of audit data within the request (*Annex 2 - Security Patterns* [`MODI`_]): OPTIONAL. The Provider MAY request additional data tracked in the Consumer's domain. In that case, this pattern MUST be used.
+    * - **[AUDIT_REST_02]** Submission of audit data within the REST request with correlation (*Annex 2 - Security Patterns* [`MODI`_]): OPTIONAL. The Provider MAY request additional data tracked in the Consumer's domain, with a correlation between such data and the authentication method. In that case, this pattern MUST be used.
       - R3, R4
+
+
+The following custom security pattern is additionally applicable:
+
+.. list-table::
+    :widths: 80 20
+    :header-rows: 1
+
+    * - **Security Pattern**
+      - **Compliant With**
+    * - REST Response Payload Integrity in PDND: REQUIRED. It ensures the integrity of the payload of the REST Provider response, within the PDND Infrastructure.
+      - R2
+
+
+Some security patterns are not applicable as they do not comply with the requirements defined above:
+
+    - The following patterns can only be used when the Consumer cannot subscribe to the PDND infrastructure (i.e., the trust between the Participants needs to be established in a direct form), thus not complying with **R1**:
+
+        - **[ID_AUTH_CHANNEL_02]** Direct Trust mutual Transport-Level Security (*Annex 2 - Security Patterns* [`MODI`_])
+        - **[ID_AUTH_REST_01]** Direct Trust based on X.509 certificate with REST (*Annex 2 - Security Patterns* [`MODI`_]).
+        - **[ID_AUTH_REST_02]** Direct Trust based on X.509 certificate with REST and token/message uniqueness (*Annex 2 - Security Patterns* [`MODI`_]).
+        - **[INTEGRITY_REST_01]** REST Payload Integrity (*Annex 2 - Security Patterns* [`MODI`_]).
+
+    - The following pattern does not provide correlation between the tracked data and the Voucher, thus not complying with **R3**:
+
+        - **[AUDIT_REST_01]** Submission of audit data within the REST request (*Annex 2 - Security Patterns* [`MODI`_]).
+
+    - The following patterns are based on a SOAP architecture, thus not complying with **R4**:
+
+        - **[ID_AUTH_SOAP_01]** Direct Trust based on X.509 certificate with SOAP (*Annex 2 - Security Patterns* [`MODI`_]).
+        - **[ID_AUTH_SOAP_02]** Direct Trust based on X.509 certificate with SOAP and token/message uniqueness (*Annex 2 - Security Patterns* [`MODI`_]).
+        - **[INTEGRITY_SOAP_01]** SOAP Payload Integrity (*Annex 2 - Security Patterns* [`MODI`_]).
+
 
 Voucher Issuance
 ==========================
@@ -89,6 +120,7 @@ The **Provider** MUST comply with the following prerequisites:
 
     - Has successfully subscribed to the PDND Infrastructure (as per R1).
     - Has created a new e-Service and published it within the PDND API Catalogue.
+    - Has approved the Consumer's request to enroll in the e-Service.
 
 Flow
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -109,7 +141,7 @@ Flow
     :name: code_VoucherIssuance_eService_TrackingEvidence_Header
 
     {
-        "alg": "RS256",
+        "alg": "ES256",
         "kid": "d4c3b2a1-9876-5432-10fe-dcba98765432",
         "typ": "JWT"
     }
@@ -123,7 +155,7 @@ Flow
         "iss": "82914b3f-60b2-4529-b4d6-3d4e67f0a933",
         "aud": "https://erogatore.example/ente-example/v1",
         "exp": 1733052600,
-        "nbf": 1733036400,
+        "nbf": 1733036450,
         "iat": 1733036400,
         "jti": "a4b5c6d7-e8f9-abcd-ef12-345678901234",
         "dnonce": 6528424213685,
@@ -160,7 +192,7 @@ Flow
     :name: code_VoucherIssuance_eService_ClientAssertion_Header
 
     {
-        "alg": "RS256",
+        "alg": "ES256",
         "kid": "d4c3b2a1-9876-5432-10fe-dcba98765432",
         "typ": "JWT"
     }
@@ -173,7 +205,7 @@ Flow
     {
         "iss": "82914b3f-60b2-4529-b4d6-3d4e67f0a933",
         "sub": "82914b3f-60b2-4529-b4d6-3d4e67f0a933",
-        "aud": "interop.pagopa.it/client-assertion",
+        "aud": "interop.pagopa.it/authorization-server",
         "exp": 1733041440,
         "iat": 1733037840,
         "jti": "7e9f3a4d-c9b2-42f6-a6d4-38e12fb6b8ab",
@@ -192,29 +224,39 @@ Flow
 
     The ``digest`` claim in the ``client_assertion`` payload is required only when complying with the ``AUDIT_REST_02`` security pattern.
 
-Upon the receipt of the Voucher Request, the PDND Authorization Server MUST perform the following steps to validate the ``client_assertion`` signature:
-
-    1. Retrieve the public key from the PDND Interoperability API referenced in the ``client_assertion``, using the ``kid`` header parameter.
-    2. Validate the signature of the ``client_assertion`` using the retrieved public key and the algorithm specified by the ``alg`` header parameter.
-
-The Provider MUST perform the following checks on the Voucher Request body parameters:
+Upon the receipt of the Voucher Request, the PDND Authorization Server MUST perform the following checks on the Voucher Request body parameters:
 
     - The claim ``client_assertion_type`` is set to ``urn:ietf:params:oauth:client-assertion-type:jwt-bearer``.
     - The claim ``grant_type`` is set to ``client_credentials``.
 
+The PDND Authorization Server MUST also validate the ``client_assertion`` JWT as follows:
 
-The Provider MUST ensure that the ``typ`` claim is present in the ``client_assertion`` header and that its value is ``JWT``.
+    Header:
 
-The Provider MUST perform the following checks on the ``client_assertion`` payload:
+        - Ensure that the ``typ`` claim is present and that its value is ``jwt``.
 
-    - The ``iss`` claim MUST identify a Client registered in the PDND Infrastructure.
-    - The ``aud`` claim MUST represent the PDND Authorization Server.
-    - The ``iat`` claim MUST represent a time instant prior to the current time.
-    - If the ``nbf`` claim is present, it MUST represent a time instant prior to the current time.
-    - The ``exp`` claim MUST represent a time instant after the current time.
-    - The ``jti`` claim MUST NOT have been previously used.
-    - The ``purposeId`` claim MUST identify a purpose registered in the PDND Infrastructure and associated to the Client.
+    Signature:
 
+        - Obtain the Consumer's public key corresponding to the ``kid`` header parameter, by interacting with the PDND Interoperability API.
+        - Validate the signature of the JWT using the retrieved Consumer's public key and the algorithm specified by the ``alg`` header parameter.
+
+    Payload:
+
+        - The ``iss`` and ``sub`` claims MUST identify a Client registered in the PDND Infrastructure.
+        - The ``aud`` claim MUST represent the PDND Authorization Server.
+        - The ``exp`` claim MUST represent a time instant after the current time.
+        - If the ``nbf`` claim is present, it MUST represent a time instant prior to the current time.
+        - The ``iat`` claim MUST represent a time instant prior to the current time.
+        - The ``jti`` claim MUST NOT have been previously used.
+        - The ``purposeId`` claim MUST identify a purpose registered in the PDND Infrastructure and associated to the Client.
+
+.. note::
+
+    The PDND Authorization Server does not need to perform any checks on the ``digest`` claim.
+
+.. note::
+
+    Verification of the ``exp``, ``nbf``, ``iat``, and ``jti`` claims, as detailed above, MUST be performed for all JWTs described within this section. These checks will not be explicitly mentioned in subsequent references.
 
 **Step 6 (Voucher Issuance)**: In case of successful checks, the PDND Authorization Server issues a Voucher, which is included in the Voucher Response to the Consumer.
 
@@ -237,7 +279,7 @@ The Provider MUST perform the following checks on the ``client_assertion`` paylo
     :name: code_VoucherIssuance_eService_AccessToken_Header
 
     {
-        "alg": "RS256",
+        "alg": "ES256",
         "kid": "b839f4c7-1e5d-4a8a-9fc6-72d3b7f091ec",
         "typ": "at+jwt"
     }
@@ -248,10 +290,10 @@ The Provider MUST perform the following checks on the ``client_assertion`` paylo
 
     {
         "iss": "interop.pagopa.it",
-        "sub": "interop.pagopa.it",
+        "sub": "82914b3f-60b2-4529-b4d6-3d4e67f0a933",
         "aud": "https://erogatore.example/ente-example/v1",
-        "exp": 1733041920,
-        "nbf": 1733041920,
+        "exp": 1733042150,
+        "nbf": 1733041945,
         "iat": 1733041920,
         "jti": "c4f5d7e2-b7c8-40f6-9b6a-dc9a4f5aeb57",
         "client_id": "82914b3f-60b2-4529-b4d6-3d4e67f0a933",
@@ -264,7 +306,7 @@ The Provider MUST perform the following checks on the ``client_assertion`` paylo
 
 .. note::
 
-    The ``digest`` claim in the ``access_token`` payload is required only when complying with the ``AUDIT_REST_02`` security pattern.
+    The ``digest`` claim in the ``access_token`` payload is required only when complying with the ``AUDIT_REST_02`` security pattern. If present, it corresponds to the value of the ``digest`` claim contained in the ``client_assertion``.
 
 Voucher for Interoperability API
 -----------------------------------
@@ -310,7 +352,7 @@ Flow
     :name: code_Voucher_InteroperabilityAPI_Issuance_ClientAssertion_Header
 
     {
-        "alg": "RS256",
+        "alg": "ES256",
         "kid": "9a4d8e3f-8b7d-4c98-926f-2745c6b1f832",
         "typ": "JWT"
     }
@@ -322,33 +364,33 @@ Flow
     {
         "iss": "5a3c7f28-91b9-4c4e-89a9-6e2f85d9262b",
         "sub": "5a3c7f28-91b9-4c4e-89a9-6e2f85d9262b",
-        "aud": "interop.pagopa.it/client-assertion",
+        "aud": "interop.pagopa.it/authorization-server",
         "exp": 1733233500,
         "iat": 1733232300,
         "jti": "d2c9a7b4-3e81-4d27-b6f7-51a8c9f0a3c6"
     }
 
-Upon the receipt of the Voucher Request, the PDND Authorization Server MUST perform the following steps to validate the ``client_assertion`` signature:
-
-    1. Retrieve the public key from the PDND Interoperability API referenced in the ``client_assertion``, using the ``kid`` header parameter.
-    2. Validate the signature of the ``client_assertion`` using the retrieved public key and the algorithm specified by the ``alg`` header parameter.
-
-The Provider MUST perform the following checks on the Voucher Request body parameters:
+Upon the receipt of the Voucher Request, the PDND Authorization Server MUST perform the following checks on the Voucher Request body parameters:
 
     - The claim ``client_assertion_type`` is set to ``urn:ietf:params:oauth:client-assertion-type:jwt-bearer``.
     - The claim ``grant_type`` is set to ``client_credentials``.
 
+The PDND Authorization Server MUST also validate the ``client_assertion`` JWT as follows:
 
-The Provider MUST ensure that the ``typ`` claim is present in the ``client_assertion`` header and that its value is ``JWT``.
+    Header:
 
-The Provider MUST perform the following checks on the ``client_assertion`` payload:
+        - Ensure that the ``typ`` claim is present and that its value is ``jwt``.
 
-    - The ``iss`` claim MUST identify a Client registered in the PDND Infrastructure.
-    - The ``aud`` claim MUST represent the PDND Authorization Server.
-    - The ``iat`` claim MUST represent a time instant prior to the current time.
-    - If the ``nbf`` claim is present, it MUST represent a time instant prior to the current time.
-    - The ``exp`` claim MUST represent a time instant after the current time.
-    - The ``jti`` claim MUST NOT have been previously used.
+    Signature:
+
+        - Obtain the Consumer's public key corresponding to the ``kid`` header parameter, by interacting with the PDND Interoperability API.
+        - Validate the signature of the JWT using the retrieved Consumer's public key and the algorithm specified by the ``alg`` header parameter.
+
+    Payload:
+
+        - The ``iss`` and ``sub`` claims MUST identify a Client registered in the PDND Infrastructure.
+        - The ``aud`` claim MUST represent the PDND Authorization Server.
+  
 
 **Step 2 (Voucher Issuance)**: In case of successful checks, the PDND Authorization Server issues a Voucher, which is included in the Voucher Response to the Participant.
 
@@ -371,7 +413,7 @@ The Provider MUST perform the following checks on the ``client_assertion`` paylo
     :name: code_Voucher_InteroperabilityAPI_Issuance_AccessToken_Header
 
     {
-        "alg": "RS256",
+        "alg": "ES256",
         "kid": "b839f4c7-1e5d-4a8a-9fc6-72d3b7f091ec",
         "typ": "at+jwt"
     }
@@ -382,10 +424,10 @@ The Provider MUST perform the following checks on the ``client_assertion`` paylo
 
     {
         "iss": "interop.pagopa.it",
-        "sub": "interop.pagopa.it",
+        "sub": "5a3c7f28-91b9-4c4e-89a9-6e2f85d9262b",
         "aud": "https://interop.pagopa.it/api/v1",
         "exp": 1733236680,
-        "nbf": 1733233080,
+        "nbf": 1733233158,
         "iat": 1733233080,
         "jti": "f87e2d5b-9f65-4f0f-8ad4-92e58e6b13c7",
         "client_id": "5a3c7f28-91b9-4c4e-89a9-6e2f85d9262b"
@@ -394,7 +436,7 @@ The Provider MUST perform the following checks on the ``client_assertion`` paylo
 PDND Authorization Server Endpoint
 --------------------------------------
 
-The PDND Authorization Server Endpoint issues Vouchers to Consumers. These Vouchers serve as credentials for the Consumer to authenticate with the e-Service.
+The PDND Authorization Server Endpoint issues Vouchers to Participants. These Vouchers serve as credentials for the Consumer to authenticate with the e-Service, or to interact with the Interoperability API.
 
 Voucher Request
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -403,7 +445,7 @@ The request to the PDND Authorization Server Endpoint adheres to the Client Cred
 
 Following the specifications above, the request MUST be an HTTP POST request with a body encoded in ``application/x-www-form-urlencoded`` format.
 
-The Voucher Request MUST include the following HTTP header parameters:
+The Voucher Request MUST include the following HTTP header parameters (unless otherwise specified):
 
 .. list-table::
     :widths: 20 60 20
@@ -413,7 +455,7 @@ The Voucher Request MUST include the following HTTP header parameters:
       - **Description**
       - **Reference**
     * - **DPoP**
-      - DPoP proof JWT, to comply with the ``REST_JWS_2021_POP`` security pattern.
+      - DPoP proof JWT, to comply with the ``REST_JWS_2021_POP`` security pattern. It is mandatory only if the requested Voucher is for e-Service (i.e., not for Interoperability API).
       - [:rfc:`9449`], [`PDND`_]
 
 The Voucher Request MUST include the following body parameters:
@@ -426,7 +468,7 @@ The Voucher Request MUST include the following body parameters:
       - **Description**
       - **Reference**
     * - **client_id**
-      - The unique identifier of the Consumer Client, assigned by the PDND.
+      - The unique identifier of the Participant Client, assigned by the PDND.
       - [:rfc:`6749`], [:rfc:`7521`], [:rfc:`7523`], [`PDND`_]
     * - **client_assertion**
       - A JWT representing the client assertion.
@@ -451,7 +493,7 @@ The ``client_assertion`` JWT MUST include the following JOSE header parameters:
       - A digital signature algorithm identifier.
       - [:rfc:`7515`]
     * - **kid**
-      - Unique identifier of the JWK used by the Consumer to sign the ``client_assertion``.
+      - Unique identifier of the JWK used by the Participant to sign the ``client_assertion``.
       - [:rfc:`7515`]
     * - **typ**
       - MUST be set to ``JWT``.
@@ -491,7 +533,7 @@ The ``client_assertion`` JWT MUST include the following payload claims (unless o
       - The identifier of the purpose registered in the PDND Platform, associated with the intended e-Service. It is mandatory only if the requested Voucher is for e-Service (i.e., not for Interoperability API).
       - [`MODI`_], [`PDND`_]
     * - **digest**
-      - JSON object containing the digest of the ``TrackingEvidence`` JWT. It is mandatory only when complying with ``AUDIT_REST_02``. If present, it MUST contain the following claims:
+      - JSON object containing the digest of the ``TrackingEvidence`` JWT. It is mandatory only if the requested Voucher is for e-Service (i.e., not for Interoperability API), and when complying with ``AUDIT_REST_02``. If present, it MUST contain the following claims:
 
         - **alg**: JSON string representing the hashing algorithm;
         - **value**: JSON string representing the value of the digest.
@@ -554,7 +596,7 @@ The ``access_token`` JWT MUST include the following payload claims (unless other
       - The identifier of the PDND Authorization Server.
       - [:rfc:`7519`], [:rfc:`9068`]
     * - **sub**
-      - MUST be set to the same value as ``iss``.
+      - The identifier of the Participant, corresponding to the ``client_id`` body parameter in the Voucher Request.
       - [:rfc:`7519`], [:rfc:`9068`]
     * - **aud**
       - The identifier of the e-Service.
@@ -597,19 +639,19 @@ PDND Keys
 
     Key Retrieval for PDND Keys - Detailed flow
 
-**Step 1 (PDND Keys Request)**: The Provider requests for the keys used by the PDND to sign Vouchers.
+**Step 1 (Keys Request)**: The Provider requests for the keys used by the PDND to sign Vouchers.
 
 .. code-block:: http
-    :caption: Non-normative example of the PDND Keys Request
+    :caption: Non-normative example of the Keys Request
     :name: _code_KeyRetrieval_PDND_Request
 
     GET /.well-known/jwks.json HTTP/1.1
     Host: interop.pagopa.it
 
-**Step 2 (PDND Keys Response)**: The .well-known Endpoint returns the list of keys used by the PDND to sign Vouchers, as a ``JWK Set`` [:rfc:`7517`].
+**Step 2 (Keys Response)**: The .well-known Endpoint returns the list of keys used by the PDND to sign Vouchers, as a ``JWK Set`` [:rfc:`7517`].
 
 .. code-block:: http
-    :caption: Non-normative example of the PDND Keys Response
+    :caption: Non-normative example of the Keys Response
     :name: _code_KeyRetrieval_PDND_Response
 
     HTTP/1.1 200 OK
@@ -621,21 +663,21 @@ PDND Keys
             "kty": "RSA",
             "n": "qU2Bp7xgkXBQI2w2PZ5LZGo34TIjoir-ul0x4jZ_d9hN6q...",
             "e": "AQAB",
-            "alg": "RS256",
+            "alg": "ES256",
             "kid": "b839f4c7-1e5d-4a8a-9fc6-72d3b7f091ec"
         },
         {
             "kty": "RSA",
             "n": "05VukHBwiE1W_kgUS0zkOyHCrRivgw5cfSTmcvD_phieEY...",
             "e": "AQAB",
-            "alg": "RS256",
+            "alg": "ES256",
             "kid": "9432c16b-7aae-49df-b9c4-ea61b556652b"
         }
       ]
     }
 
 
-Peer Keys
+Participants' Keys
 -------------------
 
 Prerequisites
@@ -651,30 +693,30 @@ The **Participant** who requests the key MUST comply with the following prerequi
 Flow
 ^^^^^^^^^^^^^^^^
 
-.. _fig_KeyRetrieval_Peer_Flow:
+.. _fig_KeyRetrieval_Participant_Flow:
 
-.. figure:: ../../images/Low-Level-Flow-AuthenticSource-KeyRetrieval-Peer.svg
+.. figure:: ../../images/Low-Level-Flow-AuthenticSource-KeyRetrieval-Participant.svg
     :figwidth: 100%
     :align: center
-    :target: https://www.plantuml.com/plantuml/svg/fT31IiD04CRn-px5i1w4XRn03wKX2HW43JttiaccEdGxkyxELkFJ6q6iUEtvF_nWlbrMBrhEmIXfG7Z41VQeGdZn0IeOraeJ9S-QZV558vVpY6BC63_0kQ5zQfs3k_gp21g0TBq7wrpFYX8JYXyfa2vG3xrp5do6tY3Fi2g_bCGBpIZVt4DaN5fy_oyUsBddkkWhD86GzSTgkYlMTDMst-pnhM1ME4Rv-yDzXbJ6G1ESS3dm54KmfyWpyGjeX9nmekEQhJtHRAq1qrVRfjlSOkoGvtNXBm00
+    :target: https://www.plantuml.com/plantuml/svg/fSp1IlGm5CNnVPxYa6_nGQ0lC8jXIbkm25fcxIPjx-XbqYGcDsfzUYk85Low_f_pEsMnIShYbB0umYsjE9CafXVhK67OAayShPUib2qIV5b6IagDuGt63ErTQmp-rUybaGBYleSsflT2AKHATcJ7ig8UUcCqR4QloC_Ob6zgltwADy7JsjBhR_I-BlA4nZ5v-SAQRjUQhZhsXpCz5yg2IqZu8V_FY6LqFE5AwuEVGagKO_0p-qT8G8uqyMNBMbzvrbf1zTMnwGv_CKxavxAu3m00
 
-    Key Retrieval for Peer Keys - Detailed flow
+    Key Retrieval for Participant's Key - Detailed flow
 
-**Step 1 (Peer Key Request)**: The Participant requests for the key used by another Participant, corresponding to a specific ``kid``, to the PDND Interoperability API.
+**Step 1 (Key Request)**: The Participant requests for the key used by another Participant, corresponding to a specific ``kid``, to the PDND Interoperability API.
 
 .. code-block:: http
-    :caption: Non-normative example of the Peer Keys Request
-    :name: _code_KeyRetrieval_Peer_Request
+    :caption: Non-normative example of the Key Request
+    :name: _code_KeyRetrieval_Participant_Request
 
     GET /keys/c7e3d6a4-5b99-4298-9b84-d8f3a61279f1 HTTP/1.1
     Host: interop.pagopa.it
     Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzd...
 
-**Step 2 (Peer Key Response)**: The Interoperability API Endpoint returns the requested key, as a ``JWK`` [:rfc:`7517`].
+**Step 2 (Key Response)**: The Interoperability API Endpoint returns the requested key, as a ``JWK`` [:rfc:`7517`].
 
 .. code-block:: http
-    :caption: Non-normative example of the PDND Keys Response
-    :name: _code_KeyRetrieval_Peer_Response
+    :caption: Non-normative example of the Key Response
+    :name: _code_KeyRetrieval_Participant_Response
 
     HTTP/1.1 200 OK
     Content-Type: application/json
@@ -683,7 +725,7 @@ Flow
         "kty": "RSA",
         "n": "v0GyA3SHrcHhTVxF0ItL64VThy2qG76KtIlptFyE4...",
         "e": "AQAB",
-        "alg": "RS256",
+        "alg": "ES256",
         "kid": "c7e3d6a4-5b99-4298-9b84-d8f3a61279f1"
     }
 
@@ -691,6 +733,21 @@ Flow
 
     The Interoperability API includes an event notification endpoint that alerts subscribed Participants about changes within the PDND Infrastructure. Among these notifications, the ``/events/keys`` endpoint provides updates on modifications to cryptographic material, such as additions or deletions of keys. By leveraging this mechanism, Participants can implement a periodic polling strategy to retrieve all changed keys and update their local cache. This eliminates the need to request each key individually during the workflow.
 
+
+.well-known Endpoint
+-------------------------------------
+
+The .well-known Endpoint is part of the PDND Infrastructure and used to retrieve the public keys used by the PDND Authorization Server to sign the Vouchers.
+
+Keys Request
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Keys Request is a ``GET`` HTTP request sent to the .well-known Endpoint. This endpoint allows Participants to retrieve the public keys necessary to verify digital signatures on Vouchers issued by the PDND Authorization Server.
+
+Keys Response
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The .well-known Endpoint responds with a ``200`` OK status code and a ``JWK Set`` [:rfc:`7517`] containing the public keys employed by the PDND Authorization Server to sign Vouchers.
 
 Interoperability API Endpoint
 -------------------------------------
@@ -718,22 +775,8 @@ The Key Request MUST include the following HTTP header parameters:
 Key Response
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The Interoperability API Endpoint returns the requested key, as a ``JWK`` (:rfc:`7517`).
+The Interoperability API Endpoint responds with a ``200`` OK status code and a ``JWK`` [:rfc:`7517`] representing the public key with the provided ``kid``.
 
-.well-known Endpoint
--------------------------------------
-
-The .well-known Endpoint is part of the PDND Infrastructure and used to retrieve the public keys used by the PDND Authorization Server to sign the Vouchers.
-
-PDND Keys Request
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The PDND Keys Request is a ``GET`` HTTP request sent to the .well-known Endpoint. This endpoint allows Participants to retrieve the public keys necessary to verify digital signatures on Vouchers issued by the PDND Authorization Server.
-
-PDND Keys Response
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The .well-known Endpoint returns the list of keys used by the PDND Authorization Server to sign Vouchers, as a ``JWK Set`` [:rfc:`7517`].
 
 e-Service Usage
 ===================
@@ -750,6 +793,10 @@ The **Provider** MUST comply with the following prerequisites:
     - Has created a new key ring associated with the specific e-Service.
     - Has registered a key pair associated with the key ring.
 
+.. note:: 
+
+    The key ring on the Provider's side is the reciprocal entity to the Client on the Consumer's side. This component serves as a store for cryptographic material, thus enabling Consumers to verify the integrity of responses transmitted by Providers.
+
 Flow
 -------
 
@@ -758,7 +805,7 @@ Flow
 .. figure:: ../../images/Low-Level-Flow-AuthenticSource-Usage.svg
     :figwidth: 100%
     :align: center
-    :target: https//www.plantuml.com/plantuml/svg/bT3F2jD040Rm-px5iBteGb-W1sb9h7yG3KdLesmtOx8qsQcpiwdjqvkOLYfIi9T0sFb-V7phA9ObzPqIBnq2BYlamJk4pz4sg9HDGY7rUsIbzlGJZCaenDGZ6mEBTmFnMG4SHyGxVxH1G1lpQPEaXQpp6CGO3JP2jbKOQXY9crFa7_F9s5mIuoDZ-X3xYnLF0QPko5TnK_qZCWs-dfkzfO3d74-Fu18Z9NRujrdUcTbs-IhRhWh64K1u_tK79pyces-2bSG8BxIkRZzQl_mJWOpH2a9UK0579le-FvNL2d8h5ahyaJ3Ax7sXvDffNWua23GWZprWyS4thRnXnA00iXRT0RIUIAsdah-l_ozadSCOlmaTC3mTth5r1n-QrzEqmU6pmFr4TycoMivRNRV06cehLgt7azHtlm00
+    :target: https////www.plantuml.com/plantuml/svg/ZP1HRzCm4CVV_IbEtWjOgeHut0DQbQmmX5YLTF1OUSwHM4ryuNpkw3uzph8LAZJK5ykMx_-xd_vNKInB6debNde4NDJ8U-yGxg9jKIcRX48Qxf6LkgTVO4n18QO1sHYukDaJ7nJ0c27U-T460MtCxJ991qNlCOWn6co4OgKmD90HBvnr-RMS6Cl7nFWQOpg8_QCLJm4cD-HduhB-XyYqzyrizea27afyU0rSOQJ43a-PrL_COhNuKAmkrumPWF3v-mOUV4v6tmOhYH7UQ5s_FBH-Uun0mMW5eLpJ6aOc-Z5_LVKbb5PiNlupOPIPzusIwwPwEL0EKRR97d3nnRUTV6J4e02A3jqEj9wGMa-IJzFdXQnp6EDMQ8VX94oZm6te3xE8rikxycQphQxhpVRT-pm9y3_ydmKRjcxdGtizrHySFaMFQ_BbFCzZcIUILRsOMtrk3Hjeh5XrbKVIqFy6
 
     e-Service Usage - Detailed flow
 
@@ -769,7 +816,7 @@ Flow
     :name: _code_Usage_Signature_Header
 
     {
-        "alg": "RS256",
+        "alg": "ES256",
         "kid": "d4c3b2a1-9876-5432-10fe-dcba98765432",
         "typ": "JWT"
     }
@@ -783,7 +830,7 @@ Flow
         "sub": "9a8b7c6d-e5f4-g3h2-i1j0-klmnopqrstuv",
         "aud": "https://erogatore.example/ente-example/v1",
         "iat": 1733397840,
-        "nbf": 1733397840,
+        "nbf": 1733401628,
         "exp": 1733401440,
         "jti": "d3f7b2c9-274a-42b7-8f8d-2e9d8b1734b0",
         "signed_headers": [
@@ -794,7 +841,7 @@ Flow
 
 .. note::
 
-    Step 1 is required only when complying with the ``INTEGRITY_REST_02`` security pattern.
+    Step 1 is required to comply with the ``INTEGRITY_REST_02`` security pattern.
 
 **Step 2 (DPoP Proof for e-Service Endpoint)**: The Consumer MUST create a fresh DPoP Proof JWT following the instruction provided in the Section 4 of [:rfc:`9449`] for the token presentation to the e-Service Endpoint.
 
@@ -820,37 +867,65 @@ Flow
 
 The Provider MUST validate the DPoP proof [:rfc:`9449`].
 
-The Provider MUST ensure that the ``typ`` claim is present in the Voucher header and that its value is ``at+jwt``.
+The Provider MUST validate the Voucher as follows:
 
-The Provider MUST perform the following steps to validate the Voucher signature:
+    Header:
 
-    1. Retrieve the public key from the .well-known Endpoint referenced in the Voucher, using the ``kid`` header parameter.
-    2. Validate the signature of the ``access_token`` using the retrieved public key and the algorithm specified by the ``alg`` header parameter.
+        - Ensure that the ``typ`` claim is present and that its value is ``at+jwt``.
 
-The Provider MUST perform the following checks on the Voucher payload:
+    Signature:
 
-    - The ``iss`` claim MUST identify the domain of the PDND Authorization Server.
-    - The ``aud`` claim MUST match the intended e-Service.
-    - The ``iat`` claim MUST represent a time instant prior to the current time.
-    - If the ``nbf`` claim is present, it MUST represent a time instant prior to the current time.
-    - The ``exp`` claim MUST represent a time instant after the current time.
-    - The ``jti`` claim MUST NOT have been previously used.
+        - Retrieve the collection of public keys published at the .well-known endpoint. From this collection, select the public key whose identifier corresponds to the value of the ``kid`` header parameter in the Voucher.
+        - Validate the signature of the ``access_token`` using the retrieved public key and the algorithm specified by the ``alg`` header parameter.
 
-The Provider MUST perform the following steps to validate the ``TrackingEvidence`` JWT:
+    Payload:
 
-    1. Obtains the Consumer's public key corresponding to the ``kid`` header parameter, by interacting with the PDND Interoperability API.
-    2. Validate the signature of the JWT using the retrieved Consumer's public key and the algorithm specified by the ``alg`` header parameter.
-    3. Compute the hash of the JWT and verify that it matches the value of the ``digest.value`` claim contained in the ``access_token`` payload.
-    4. Check that the ``jti`` claim has not been previously used.
+        - The ``iss`` claim MUST identify the domain of the PDND Authorization Server.
+        - The ``sub`` claim MUST correspond to the ``client_id`` claim.
+        - The ``aud`` claim MUST match the intended e-Service.
 
-The Provider MUST perform the following checks on the ``Signature`` JWT:
+The Provider MUST validate the ``TrackingEvidence`` JWT as follows:
 
-    1. Validate the signature of the JWT using the retrieved Consumer's public key (corresponding to the ``kid`` header parameter) and the algorithm specified by the ``alg`` header parameter.
-    2. Validate the integrity of the message, by checking that:
+    Header:
 
-        - The ``Content-Type`` HTTP header of the e-Service Request matches that in the ``signed_headers`` claim.
-        - The digest of the payload of the e-Service Request matches that in the ``signed_headers`` claim.
-    3. Check that the ``jti`` claim has not been previously used.
+        - Ensure that the ``typ`` claim is present and that its value is ``JWT``.
+
+    Signature:
+
+        - Obtains the Consumer's public key corresponding to the ``kid`` header parameter, by interacting with the PDND Interoperability API.
+        - Validate the signature of the JWT using the retrieved Consumer's public key and the algorithm specified by the ``alg`` header parameter.
+
+    Payload:
+
+        - The ``iss`` claim MUST identify the Consumer Client.
+        - The ``aud`` claim MUST identify the Provider.
+
+In addition, the Provider MUST ensure that the hash of the ``TrackingEvidence`` JWT matches the value of the ``digest.value`` claim contained in the ``access_token`` payload.
+
+.. note:: 
+
+    The validation of the ``TrackingEvidence`` JWT is required only when complying with the ``AUDIT_REST_02`` security pattern.
+
+The Provider MUST validate the ``Signature`` JWT as follows:
+
+    Header:
+
+        - Ensure that the ``typ`` claim is present and that its value is ``JWT``.
+
+    Signature:
+    
+        - Validate the signature of the JWT using the retrieved Consumer's public key and the algorithm specified by the ``alg`` header parameter.
+
+    Payload:
+
+        - The ``iss`` and ``sub`` claims MUST identify the Consumer Client.
+        - The ``aud`` claim MUST identify the Provider.
+
+In addition, the Provider MUST validate the integrity of the e-Service Request, by checking that:
+
+    - The ``signed_headers.content-type`` claim matches the value of the ``Content-Type`` HTTP header of the e-Service Request.
+    - The ``signed_headers.digest`` claim matches the value of the digest of the payload of the e-Service Request.
+        
 
 If any of the previous checks fail, the Provider MUST reject the Request.
 
@@ -871,7 +946,7 @@ If any of the previous checks fail, the Provider MUST reject the Request.
     :name: _code_Usage_Response_JWT_Header
 
     {
-        "alg": "RS256",
+        "alg": "ES256",
         "kid": "2802a69-1604-4261-9246-21453e20658e",
         "typ": "JWT"
     }
@@ -883,9 +958,9 @@ If any of the previous checks fail, the Provider MUST reject the Request.
     {
         "iss": "https://erogatore.example/ente-example/v1",
         "aud": "9a8b7c6d-e5f4-g3h2-i1j0-klmnopqrstuv",
-        "iat": 1733401256,
-        "nbf": 1733401256,
         "exp": 1733401785,
+        "nbf": 1733401387,
+        "iat": 1733401256,
         "jti": "997532e-871a-4969-9999-123456789abc",
         "requestedField1": "value1",
         "requestedField2": "value2",
@@ -893,11 +968,22 @@ If any of the previous checks fail, the Provider MUST reject the Request.
     }
 
 
-The Provider MUST perform the following steps to validate the e-Service Response JWT:
+The Consumer MUST perform the following steps to validate the e-Service Response JWT:
 
-    1. Obtains the Provider's public key corresponding to the ``kid`` header parameter, by interacting with the PDND Interoperability API.
-    2. Validate the signature of the JWT using the retrieved Provider's public key and the algorithm specified by the ``alg`` header parameter.
+    Header:
+
+        - Ensure that the ``typ`` claim is present and that its value is ``JWT``.
+
+    Signature:
     
+        - Obtain the Provider's public key corresponding to the ``kid`` header parameter, by interacting with the PDND Interoperability API.
+        - Validate the signature of the JWT using the retrieved Provider's public key and the algorithm specified by the ``alg`` header parameter.
+
+    Payload:
+
+        - The ``iss`` claim MUST identify the Provider.
+        - The ``aud`` claim MUST identify the Consumer Client itself.
+
 
 e-Service Endpoint
 -------------------------------------
@@ -915,7 +1001,7 @@ The e-Service Request MUST include the following HTTP header parameters (unless 
       - **Description**
       - **Reference**
     * - **Authorization**
-      - Voucher released by the PDND Authorization Server, to comply with the ``ID_AUTH_REST_02`` security pattern.
+      - Voucher released by the PDND Authorization Server.
       - [:rfc:`9449`], [`MODI`_], [`PDND`_]
     * - **DPoP**
       - DPoP proof JWT, to comply with the ``REST_JWS_2021_POP`` security pattern.
@@ -924,7 +1010,7 @@ The e-Service Request MUST include the following HTTP header parameters (unless 
       - JWT containing the signature of the message headers whose integrity needs to be guaranteed, to comply with the ``INTEGRITY_REST_02`` security pattern.
       - [`MODI`_]
     * - **Digest**
-      - Digest of the message payload.
+      - Digest of the message payload, to comply with the ``INTEGRITY_REST_02`` security pattern. According to :rfc:`3230`, the format MUST be the following: ``<digest-algorithm>=<encoded digest output>``.
       - [:rfc:`3230`], [`MODI`_]
     * - **Agid-JWT-TrackingEvidence**
       - JWT containing the data tracker in the Consumer's domain. It is mandatory only when complying with ``AUDIT_REST_02``.
@@ -1075,7 +1161,7 @@ The e-Service Response JWT MUST include the following payload claims:
       - **Description**
       - **Reference**
     * - **iss**
-      - The identifier of the Provider.
+      - The identifier of the e-Service.
       - [:rfc:`7519`]
     * - **aud**
       - The identifier of the Consumer.
