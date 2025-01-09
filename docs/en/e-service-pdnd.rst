@@ -19,6 +19,7 @@ Access to an e-Service requires Consumers to obtain a specific Access Token, kno
 Requirements and Security Patterns
 ========================================
 
+This specification is based on the following set of requirements:
 
 .. list-table::
     :widths: 10 70 20
@@ -40,7 +41,7 @@ Requirements and Security Patterns
       - The e-Services MUST be implemented in REST, thus SOAP protocol MUST NOT be used.
       - Technical
 
-The following security patterns are applicable:
+`PDND`_ and `MODI`_ define several security patterns designed to enhance specific security properties in interactions between Participants. This specification adopts the following applicable security patterns:
 
 .. list-table::
     :widths: 80 20
@@ -58,7 +59,7 @@ The following security patterns are applicable:
       - R3, R4
 
 
-The following custom security pattern is additionally applicable:
+In addition, this specification defines and applies a custom security pattern:
 
 .. list-table::
     :widths: 80 20
@@ -70,7 +71,7 @@ The following custom security pattern is additionally applicable:
       - R2
 
 
-Some security patterns are not applicable as they do not comply with the requirements defined above:
+Some security patterns defined in `PDND`_ and `MODI`_ are not applicable as they do not comply with the requirements defined above:
 
     - The following patterns can only be used when the Consumer cannot subscribe to the PDND infrastructure (i.e., the trust between the Participants needs to be established in a direct form), thus not complying with **R1**:
 
@@ -383,8 +384,8 @@ The PDND Authorization Server MUST also validate the ``client_assertion`` JWT as
 
     Signature:
 
-        - Obtain the Consumer's public key corresponding to the ``kid`` header parameter, by interacting with the PDND Interoperability API.
-        - Validate the signature of the JWT using the retrieved Consumer's public key and the algorithm specified by the ``alg`` header parameter.
+        - Obtain the Participant's public key corresponding to the ``kid`` header parameter, by interacting with the PDND Interoperability API.
+        - Validate the signature of the JWT using the retrieved Participant's public key and the algorithm specified by the ``alg`` header parameter.
 
     Payload:
 
@@ -436,7 +437,7 @@ The PDND Authorization Server MUST also validate the ``client_assertion`` JWT as
 PDND Authorization Server Endpoint
 --------------------------------------
 
-The PDND Authorization Server Endpoint issues Vouchers to Participants. These Vouchers serve as credentials for the Consumer to authenticate with the e-Service, or to interact with the Interoperability API.
+The PDND Authorization Server Endpoint issues Vouchers to Participants. These Vouchers allow Consumers to access e-Service resources and enable Participants to interact with the Interoperability API.
 
 Voucher Request
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -617,7 +618,7 @@ The ``access_token`` JWT MUST include the following payload claims (unless other
       - MUST correspond to the ``client_id`` contained in the Voucher Request.
       - [:rfc:`7519`], [:rfc:`8963`], [:rfc:`9068`], [`PDND`_]
     * - **purposeId**
-      - MUST correspond to the value of the ``client_id`` claim contained in the Voucher Request. It is mandatory only if the requested Voucher is for e-Service (i.e., not for Interoperability API).
+      - MUST correspond to the value of the ``purposeId`` claim contained in the Voucher Request. It is mandatory only if the requested Voucher is for e-Service (i.e., not for Interoperability API).
       - [`MODI`_], [`PDND`_]
     * - **digest**
       - MUST correspond to the value of the ``digest`` object contained in the Voucher Request. It is mandatory only when complying with ``AUDIT_REST_02``.
@@ -884,6 +885,10 @@ The Provider MUST validate the Voucher as follows:
         - The ``sub`` claim MUST correspond to the ``client_id`` claim.
         - The ``aud`` claim MUST match the intended e-Service.
 
+.. note:: 
+
+    If the Provider requires additional context about the request, it can interact with the PDND Interoperability API by passing the value of the ``purposeId`` as a parameter.
+
 The Provider MUST validate the ``TrackingEvidence`` JWT as follows:
 
     Header:
@@ -924,7 +929,7 @@ The Provider MUST validate the ``Signature`` JWT as follows:
 In addition, the Provider MUST validate the integrity of the e-Service Request, by checking that:
 
     - The ``signed_headers.content-type`` claim matches the value of the ``Content-Type`` HTTP header of the e-Service Request.
-    - The ``signed_headers.digest`` claim matches the value of the digest of the payload of the e-Service Request.
+    - The ``signed_headers.digest`` claim matches the value of the digest of the payload of the e-Service Request, as well as the value of the ``Digest`` HTTP header of the e-Service Request.
         
 
 If any of the previous checks fail, the Provider MUST reject the Request.
